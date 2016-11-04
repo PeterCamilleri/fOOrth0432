@@ -1,0 +1,106 @@
+I am having some fun with ruby and forth, or as I call
+it fOOrth.
+
+Here was my first try for maximum speed:
+Note that I have compiler debug turned on so the lines
+beginning with "block:" are the ruby code generated.
+
+>)start 100000000 0 do loop    )finish
+block: lambda {|vm| vm.vm_do {|i,j| vm.ctrl_peek[1] += 1}; }
+66.238788 seconds elapsed.
+
+So I did some clean up on vm_do with is result:
+
+>)start 100000000 0 do loop    )finish
+block: lambda {|vm| vm.vm_do {|i,j| vm.ctrl_peek[1] += 1}; }
+46.594665 seconds elapsed.
+
+and some more vm_do clean up:
+
+>)start 100000000 0 do loop    )finish
+block: lambda {|vm| vm.vm_do {|i,j| vm.ctrl_peek[1] += 1}; }
+34.328963 seconds elapsed.
+
+Finally, cleaning up the loop increment step to avoid redundant effort:
+
+>)start 100000000 0 do loop    )finish
+block: lambda {|vm| vm.vm_do {|i,j,z| z[1] += 1}; }
+18.026031 seconds elapsed.
+
+So from 66.238788 seconds down to only 18.026031 seconds
+That's 3.6746185557985559882816134067449 times faster ;-)
+
+I am considering collapsing the i,j,z parameters down to just
+j,z because i == z[0], but I am not sure it would be worth it.
+
+The fOOrth language dictionary so far:
+
+>words
+nop        (          //         rj         lj         cj         .
+.rj        .lj        .cj        .cr        "          ."         load"
+,asm"      dsd        csd        =          >          <          >=
+<=         <=>        0=         0>         0<         0>=        0<=
+0<=>       +          -          *          /          mod        */
+and        or         xor        invert     1+         1-         to_s
+to_i       to_f       to_r       drop       dup        ?dup       over
+swap       pick       nip        tuck       :          ;          fwd:
+if         else       then       do         i          j          loop
++loop      begin      while      until      again      repeat     )debug
+)normal    )quit      )abort     )abort"    ?abort     ?abort"    )start
+)finish    )"         words
+
+Some are worth mentioning as they are highly non-standard
+
+nop == do nothing
+
+rj == right justify
+lj == left justify
+cj == center justify
+
+.rj == print tos right justified
+.lj == print tos left justified
+.cj == print tos center justified
+
+// C++ style comments to end of line
+
+" used to begin a string literal as in "test 1 2 3"
+and yes that's not an error, the scanner recognizes
+words ti a trailing " as a special case
+
+." print string without the need for the extra 
+space ."Tesing 1 2 3"
+
+load" load a fOOrth source file and interpret it. 
+for example load"test.fOOrth"
+
+,asm" embed ruby "assembly code" directly into a word.
+Needless to say so caution is required here.
+
+fwd: a half baked untested idea, designed to replace 'recurse'.
+
+dsd - a debug tool, dumps the data stack
+csd - a debug tool, dumps the control stack
+
+to_s - convert tos to a string
+to_i - convert tos to an integer
+to_f - convert tos to a float
+to_r - convert tos to a rational
+
+)debug - turn on the compiler debug
+)normal - turn off the compiler debug
+
+)quit - exit fOOrth
+)abort - abort all execution and return to prompt
+)abort" = like )abort but with a custom text msg
+?abort - if tos is true, abort all execution and return to prompt
+?abort" = like ?abort but with a custom text msg
+
+)start - start the execution timer
+)finish - print out the elapsed time
+
+)" execute the string as a command; eg )"dir"
+
+words - display the word list
+
+So far no <builds does> variable constant or many 
+others, but progress is being made.
